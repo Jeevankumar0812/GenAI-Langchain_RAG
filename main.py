@@ -1,6 +1,8 @@
 #from langchain_ollama import ChatOllama
 #from langchain_openai import ChatOpenAI
+from typing import List
 
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 load_dotenv()
 import os
@@ -12,6 +14,17 @@ from langchain_core.messages import HumanMessage
 from langchain_tavily import TavilySearch
 
 #tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
+
+class Source(BaseModel):
+    """Schema for a source used by the agent."""
+    name: str = Field(..., description="The name of the source.")
+    url: str = Field(..., description="The URL of the source.")
+
+class AgentResponse(BaseModel):
+    """Schema for the agent's response with answer and sources."""
+    answer: str = Field(..., description="The agent's answer to the query.")
+    sources: List[Source] = Field(default_factory=list, description="A list of sources used by the agent to arrive at the answer.")
+
 
 @tool
 def search(query: str) -> str:
@@ -29,7 +42,7 @@ llm = ChatGoogleGenerativeAI(
     temperature=0
 )
 tools = [TavilySearch(api_key=os.getenv("TAVILY_API_KEY"))]
-agent = create_agent(model=llm, tools=tools)
+agent = create_agent(model=llm, tools=tools,response_format=AgentResponse)
 
 def main():
     print("Hello from genai-langchain-rag!")
